@@ -10,13 +10,20 @@ dotenv.config();
 
 @Injectable()
 export class VonageService {
+  private questionIndex = 0;
   private vonage: Vonage;
+  private questions = [
+    "Which answer do you choose for question one?",
+    "Which answer do you choose for question two?",
+    "Which answer do you choose for question three?",
+    "Which answer do you choose for question four?",
+  ];
 
   constructor() {
     const privateKeyPath = resolve(process.env.VONAGE_PRIVATE_KEY as string);
     const auth = new Auth({
-      apiKey: process.env.VONAGE_API_KEY,
-      apiSecret: process.env.VONAGE_API_SECRET,
+      // apiKey: process.env.VONAGE_API_KEY,
+      // apiSecret: process.env.VONAGE_API_SECRET,
       applicationId: process.env.VONAGE_APPLICATION_ID as string,
       privateKey: readFileSync(privateKeyPath).toString(),
     });
@@ -27,58 +34,17 @@ export class VonageService {
   async initiateCall(to: string) {
     const callData = {
       to: [{ type: 'phone', number: to as string }],
-      from: { type: 'phone', number: process.env.VONAGE_CALLER_ID as string },
+      from: { type: 'phone', number: "12072045218"},
       style: 2,
       ncco: [
         {
           action: 'talk',
-          text: "Hello, this is RT Demo Emergency Department calling about your recent visit. If this is Jane Smith, press 1. If not, press 2. If we have reached the incorrect household, press 3"
+          text: 'Hello, My name is Vonage, I call to collect some your information. Press 1 to continue, press 2 to drop the call.'
         },
         {
-          action: "input",
-          eventUrl: [
-            "https://tuan-local.ap.ngrok.io/vonage/dtmf?questionId=1"
-          ],
-          type: [ "dtmf"],
-          dtmf: {
-            maxDigits: 1
-          }
-        },
-        {
-          action: 'talk',
-          text: "Great! We would appreciate feedback about your recent visit to RT Demo Emergency Department on November 30. There are only a few brief questions and your responses will help us to improve the quality of care that we provide. We value all feedback and may share patient comments anonymously online. Let’s get started"
-        },
-        {
-          action: 'talk',
-          text: "Were you seen by a care provider in a timely manner? Please press 1 for No, 2 for Yes somewhat, 3 for Yes mostly, 4 for Yes definitely."
-        },
-        {
-          action: "input",
-          eventUrl: [
-            "https://tuan-local.ap.ngrok.io/vonage/dtmf?questionId=2"
-          ],
-          type: [ "dtmf"],
-          dtmf: {
-            maxDigits: 1
-          }
-        },
-        {
-          action: 'talk',
-          text: "Did the care providers explain things in a way you could understand? Please press 1 for No, 2 for Yes somewhat, 3 for Yes mostly, 4 for Yes definitely."
-        },
-        {
-          action: "input",
-          eventUrl: [
-            "https://tuan-local.ap.ngrok.io/vonage/dtmf?questionId=3"
-          ],
-          type: [ "dtmf"],
-          dtmf: {
-            maxDigits: 1
-          }
-        },
-        {
-          action: "talk",
-          text: "Thank you for your feedback. Thank you, goodbye."
+          action: 'input',
+          eventUrl: [`${process.env.APP_BASE_URL}/vonage/input`],
+          maxDigits: 1
         }
       ],
     } as OutboundCall;
@@ -109,5 +75,20 @@ export class VonageService {
     } catch (error) {
       throw new Error(`Failed to fetch conversation: ${error.message}`);
     }
+  }
+
+  handleUserInput(dtmf: string) {
+    if (dtmf === '2') {
+      return [{ action: 'talk', text: 'Goodbye! I consider you dont have need for now' }];
+    }
+
+    if (this.questionIndex < this.questions.length) {
+      return [
+        { action: 'talk', text: this.questions[this.questionIndex++] },
+        { action: 'input', eventUrl: [`${process.env.APP_BASE_URL}/vonage/input`], maxDigits: 1 }
+      ];
+    }
+
+    return [{ action: 'talk', text: 'Thank you! Goodbye.' }];
   }
 }

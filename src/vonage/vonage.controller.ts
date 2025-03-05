@@ -11,6 +11,12 @@ export class VonageController {
     return await this.vonageService.initiateCall(to);
   }
 
+  @Post('input')
+  handleInput(@Body() body: any) {
+    const dtmf = body.dtmf;
+    return this.vonageService.handleUserInput(dtmf);
+  }
+
   @Post('webhook')
   async handleWebhook(@Req() req: Request, @Res() res: Response) {
     console.log('Vonage Webhook Event:', req.body);
