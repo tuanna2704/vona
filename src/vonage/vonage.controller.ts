@@ -31,7 +31,7 @@ export class VonageController {
 
   @Get('answer')
   getAnswer(@Res() res: Response) {
-    console.log('Vonage Answer Event');
+    console.log('Vonage Answer Event', res);
     res.json([
       {
         action: 'talk',
